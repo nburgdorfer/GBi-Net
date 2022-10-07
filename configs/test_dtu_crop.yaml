@@ -1,4 +1,4 @@
-output_dir: "exps/test_dtu_crop"
+output_dir: "/media/nate/Data/Results/GBi-Net/dtu/Output_crop/"
 true_gpu: "0"
 gpu: [0]
 random_seed: 0
@@ -9,7 +9,7 @@ model_name: "GBiNet"
 test_func_name: "test_model_stage_profile"
 dataset: "dtu_yao_eval"
 max_depth: 8
-model_path: "checkpoints/dtu_crop.ckpt"
+model_path: "/media/nate/Data/MVS/GBi-Net/dtu/models/dtu_crop.ckpt"
 img_mean: [0.5, 0.5, 0.5]
 img_std: [0.5, 0.5, 0.5]
 
@@ -45,7 +45,7 @@ test:
 data:
   num_workers: 4
   test:
-    root_dir: "data/dtu"
+    root_dir: "/media/nate/Data/DTU/"
     num_view: 5
     interval_scale: 0.8
     num_depth: 256

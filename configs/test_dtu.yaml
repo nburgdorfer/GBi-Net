@@ -1,4 +1,4 @@
-output_dir: "exps/test_dtu"
+output_dir: "/media/nate/Data/Results/GBi-Net/dtu/Output/"
 true_gpu: "1"
 gpu: [0]
 random_seed: 0
@@ -9,7 +9,7 @@ model_name: "GBiNet"
 test_func_name: "test_model_stage_profile"
 dataset: "dtu_yao_eval"
 max_depth: 8
-model_path: "checkpoints/dtu.ckpt"
+model_path: "/media/nate/Data/MVS/GBi-Net/dtu/models/dtu.ckpt"
 img_mean: [0.5, 0.5, 0.5]
 img_std: [0.5, 0.5, 0.5]
 
