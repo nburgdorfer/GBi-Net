@@ -1,6 +1,6 @@
-output_dir: "exps/test_tanks_advanced"
-true_gpu: "2"
-gpu: [0]
+output_dir: "/media/Data/nate/Results/GBi-Net/tnt/Output_advanced/"
+true_gpu: "0,1"
+gpu: [0,1]
 random_seed: 0
 auto_resume: True
 master_port: "11322"
@@ -46,7 +46,7 @@ test:
 data:
   num_workers: 4
   test:
-    root_dir: "data/tankandtemples/advanced"
+    root_dir: "/media/Data/nate/TNT/advanced"
     num_view: 7
     interval_scale: 1.0 # disabled for advanced
     num_depth: 256 # disabled for advanced
@@ -74,7 +74,7 @@ fusion:
     global_pair: False
     para_num: 1
     para_tag: [0]
-    output_dir: "exps/test_tanks_advanced/xy_filter"
+    output_dir: "/media/Data/nate/Results/GBi-Net/tnt/Output_advanced_fused/"
     Family:
       prob_threshold: [0.85]
       num_consistent: [5]

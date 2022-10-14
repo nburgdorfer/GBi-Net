@@ -1,6 +1,6 @@
-output_dir: "exps/test_dtu_crop"
-true_gpu: "0"
-gpu: [0]
+output_dir: "/media/Data/nate/Results/GBi-Net/dtu/Output/"
+true_gpu: "0,1"
+gpu: [0,1]
 random_seed: 0
 auto_resume: True
 master_port: "11320"
@@ -45,11 +45,11 @@ test:
 data:
   num_workers: 4
   test:
-    root_dir: "data/dtu"
+    root_dir: "/media/Data/nate/DTU/"
     num_view: 5
     interval_scale: 0.8
     num_depth: 256
-    listfile:  "lists/dtu/test.txt"
+    listfile:  "lists/dtu/testing_all.txt"
     out_scale: 1.0
     self_norm: False
     color_mode: null
@@ -64,7 +64,7 @@ data:
     prob_depth: 6
 
 # no_testing: True
-# no_fusion: True
+no_fusion: True
 
 fusion:
   name: "xy_filter_per"

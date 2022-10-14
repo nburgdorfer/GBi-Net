@@ -46,7 +46,7 @@ class MVSDataset(Dataset):
 
         # scans
         for scan in scans:
-            pair_file = "{}/pair.txt".format(scan)
+            pair_file = "Cameras/{}/pair.txt".format(scan)
             # read the pair file
             with open(os.path.join(self.datapath, pair_file)) as f:
                 num_viewpoint = int(f.readline())
@@ -192,10 +192,10 @@ class MVSDataset(Dataset):
 
         for i, vid in enumerate(view_ids):
             # NOTE that the id in image file names is from 1 to 49 (not 0~48)
-            img_filename = os.path.join(self.datapath, '{}/images/{:0>8}.jpg'.format(scan, vid))
+            img_filename = os.path.join(self.datapath, 'Images/{}/{:0>8}.png'.format(scan, vid))
             mask_filename = ""
             depth_filename = ""
-            proj_mat_filename = os.path.join(self.datapath, '{}/cams/{:0>8}_cam.txt'.format(scan, vid))
+            proj_mat_filename = os.path.join(self.datapath, 'Cameras/{}/{:0>8}_cam.txt'.format(scan, vid))
 
             img = self.read_img(img_filename, color_mode=self.color_mode)
             cam_data = self.read_cam_file(proj_mat_filename)
@@ -241,6 +241,10 @@ class MVSDataset(Dataset):
                 stage_cam = np.zeros([2, 4, 4], dtype=np.float32)
                 stage_cam[0, :4, :4] = extrinsics
                 stage_cam[1, :3, :3] = stage_intrinsics
+                stage_cam[1, 3, 0] = depth_min
+                stage_cam[1, 3, 1] = depth_interval
+                stage_cam[1, 3, 2] = 256
+                stage_cam[1, 3, 3] = (depth_interval*256) + depth_min
                 cams[str(stage_id)].append(stage_cam)
             
                 if i == 0:  # reference view

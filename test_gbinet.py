@@ -212,7 +212,8 @@ def test_model_stage(model,
                 stage_id = depth2stage[str(curr_tree_depth)]
                 curr_depth_sample_num = 4
                 next_depth_sample_num = 4
-                depth_output_dir = osp.join(output_dir, "depth_{}".format(curr_tree_depth))
+                #depth_output_dir = osp.join(output_dir, "depth_{}".format(curr_tree_depth))
+                depth_output_dir = output_dir
                 os.makedirs(depth_output_dir, exist_ok=True)
                 scan_names = sample["scan_name"]
                 img_ids = tensor2numpy(sample["img_id"])
@@ -243,8 +244,8 @@ def test_model_stage(model,
                     depth_start = depth_min_max[0]
                     depth_end = depth_min_max[1]
 
-                    init_depth_map_path = osp.join(scan_folder, "{:0>8}_init.pfm".format(img_id))
-                    out_ref_image_path = osp.join(scan_folder, "{:0>8}.jpg".format(img_id))
+                    init_depth_map_path = osp.join(scan_folder, "depth_est", "{:0>8}.pfm".format(img_id))
+                    out_ref_image_path = osp.join(scan_folder, "img", "{:0>8}.png".format(img_id))
 
                     init_depth_map = pred_depth_maps[batch_idx]
                     if prob_depth is None:
@@ -253,14 +254,14 @@ def test_model_stage(model,
                         prob_map = prob_maps_prefix_mean["tree_depth_{}".format(prob_depth)][batch_idx].cpu().numpy()
                     ref_image = ref_imgs[batch_idx]
 
-                    prob_map_path = osp.join(scan_folder, "{:0>8}_prob.pfm".format(img_id))
-                    pred_prob_img_path = osp.join(scan_folder, "{:0>8}_prob_img.png".format(img_id))
+                    prob_map_path = osp.join(scan_folder, "confidence", "{:0>8}.pfm".format(img_id))
+                    pred_prob_img_path = osp.join(scan_folder, "confidence", "{:0>8}_display.png".format(img_id))
 
                     save_pfm(prob_map_path, prob_map)        
-                    plt.imsave(pred_prob_img_path, prob_map, vmin=0.0, vmax=1.0, cmap="rainbow")
+                    plt.imsave(pred_prob_img_path, prob_map, vmin=0.0, vmax=1.0, cmap="Greys_r")
                     save_pfm(init_depth_map_path, init_depth_map)
-                    pred_depth_img_path = osp.join(scan_folder, "{:0>8}_pred.png".format(img_id))
-                    plt.imsave(pred_depth_img_path, init_depth_map, cmap="rainbow", vmin=depth_start, vmax=depth_end)
+                    pred_depth_img_path = osp.join(scan_folder, "depth_est", "{:0>8}_display.png".format(img_id))
+                    plt.imsave(pred_depth_img_path, init_depth_map, cmap="Greys_r", vmin=depth_start, vmax=depth_end)
                         
                     # plt.imsave(out_ref_image_path, ref_image)
                     if color_mode == "BGR":
@@ -268,12 +269,13 @@ def test_model_stage(model,
                     else:
                         plt.imsave(out_ref_image_path, ref_image)
                     out_init_cam_path = osp.join(scan_folder, "cam_{:0>8}_init.txt".format(img_id))
+                    print(out_init_cam_path)
                     write_cam(out_init_cam_path, img_cam)
 
                     if loss_fn is not None:
                         gt_depth_img_cpu = sample["depths"][str(stage_id)][batch_idx]
                         gt_depth_img_path = osp.join(scan_folder, "{:0>8}_gt.png".format(img_id))
-                        plt.imsave(gt_depth_img_path, gt_depth_img_cpu, cmap="rainbow", vmin=depth_start, vmax=depth_end)    
+                        plt.imsave(gt_depth_img_path, gt_depth_img_cpu, cmap="Greys_r", vmin=depth_start, vmax=depth_end)    
 
             end = time.time()
         if tensorboard_logger is not None and my_rank == 0:
@@ -343,7 +345,8 @@ def test_model_stage_profile(model,
                         )
             curr_tree_depth = max_tree_depth
             stage_id = depth2stage[str(curr_tree_depth)]
-            depth_output_dir = osp.join(output_dir, "depth_{}".format(curr_tree_depth))
+            #depth_output_dir = osp.join(output_dir, "depth_{}".format(curr_tree_depth))
+            depth_output_dir = output_dir
             os.makedirs(depth_output_dir, exist_ok=True)
             scan_names = sample["scan_name"]
             img_ids = tensor2numpy(sample["img_id"])
@@ -365,28 +368,44 @@ def test_model_stage_profile(model,
                 depth_start = depth_min_max[0]
                 depth_end = depth_min_max[1]
 
+                # create output paths
+                out_depth_path = osp.join(scan_folder, "depth_est")
+                out_conf_path = osp.join(scan_folder, "confidence")
+                out_img_path = osp.join(scan_folder, "img")
+                out_cam_path = osp.join(scan_folder, "cam")
+
+                if (not os.path.exists(out_depth_path)):
+                    os.mkdir(out_depth_path)
+                if (not os.path.exists(out_conf_path)):
+                    os.mkdir(out_conf_path)
+                if (not os.path.exists(out_img_path)):
+                    os.mkdir(out_img_path)
+                if (not os.path.exists(out_cam_path)):
+                    os.mkdir(out_cam_path)
+
+
                 init_depth_map = pred_outs[0][batch_idx].cpu().numpy()
-                init_depth_map_path = osp.join(scan_folder, "{:0>8}_init.pfm".format(img_id))
-                pred_depth_img_path = osp.join(scan_folder, "{:0>8}_pred.png".format(img_id))
+                init_depth_map_path = osp.join(out_depth_path, "{:0>8}.pfm".format(img_id))
+                pred_depth_img_path = osp.join(out_depth_path, "{:0>8}_display.png".format(img_id))
 
                 prob_map = pred_outs[1][batch_idx].cpu().numpy()
-                prob_map_path = osp.join(scan_folder, "{:0>8}_prob.pfm".format(img_id))
-                pred_prob_img_path = osp.join(scan_folder, "{:0>8}_prob_img.png".format(img_id))
+                prob_map_path = osp.join(out_conf_path, "{:0>8}.pfm".format(img_id))
+                pred_prob_img_path = osp.join(out_conf_path, "{:0>8}_display.png".format(img_id))
 
                 ref_image = ref_imgs[batch_idx]
-                out_ref_image_path = osp.join(scan_folder, "{:0>8}.jpg".format(img_id))
+                out_ref_image_path = osp.join(out_img_path, "{:0>8}.png".format(img_id))
 
                 save_pfm(prob_map_path, prob_map)        
-                plt.imsave(pred_prob_img_path, prob_map, vmin=0.0, vmax=1.0, cmap="rainbow")
+                plt.imsave(pred_prob_img_path, prob_map, vmin=0.0, vmax=1.0, cmap="Greys_r")
                 save_pfm(init_depth_map_path, init_depth_map)
-                plt.imsave(pred_depth_img_path, init_depth_map, cmap="rainbow", vmin=depth_start, vmax=depth_end)
+                plt.imsave(pred_depth_img_path, init_depth_map, cmap="Greys_r", vmin=depth_start, vmax=depth_end)
                     
                 # plt.imsave(out_ref_image_path, ref_image)
                 if color_mode == "BGR":
                     cv2.imwrite(out_ref_image_path, ref_image)
                 else:
                     plt.imsave(out_ref_image_path, ref_image)
-                out_init_cam_path = osp.join(scan_folder, "cam_{:0>8}_init.txt".format(img_id))
+                out_init_cam_path = osp.join(out_cam_path, "{:0>8}.txt".format(img_id))
                 write_cam(out_init_cam_path, img_cam)
         
             end = time.time()
@@ -478,7 +497,8 @@ def test(rank, cfg):
             max_tree_depth=cfg["max_depth"],
             depth2stage=cfg["model"]["stage_info"]["depth2stage"],
             depth2sample_num=cfg["model"]["stage_info"].get("depth2sample_num", None),
-            output_dir=osp.join(cfg["output_dir"], "test_output"),
+            #output_dir=osp.join(cfg["output_dir"], "test_output"),
+            output_dir=cfg["output_dir"],
             is_clean=cfg["data"]["test"]["is_clean"],
             out_depths=cfg["data"]["test"]["out_depths"],
             save_depths=cfg["data"]["test"]["save_depths"],
@@ -494,7 +514,8 @@ def test(rank, cfg):
                 max_tree_depth=cfg["max_depth"],
                 depth2stage=cfg["model"]["stage_info"]["depth2stage"],
                 out_depths=cfg["data"]["test"]["out_depths"],
-                output_dir=osp.join(cfg["output_dir"], "test_output"),
+                #output_dir=osp.join(cfg["output_dir"], "test_output"),
+                output_dir=cfg["output_dir"],
                 logger=logging.getLogger("gbinet_test{}".format(str(rank)) + ".test"),
                 prob_depth=cfg["data"]["test"].get("prob_depth", None),
                 color_mode=cfg["data"]["test"]["color_mode"],
@@ -522,6 +543,7 @@ def test(rank, cfg):
 
 
 def gipuma_filter(cfg):
+    print("gf")
     with open(cfg["data"]["test"]["listfile"]) as f:
         scans = f.readlines()
         scans = [line.rstrip() for line in scans]
@@ -557,6 +579,7 @@ def gipuma_filter(cfg):
                 collect_tanks(collect_args)
 
 def gipuma_filter_per(cfg):
+    print("gfp")
     with open(cfg["data"]["test"]["listfile"]) as f:
         scans = f.readlines()
         scans = [line.rstrip() for line in scans]
@@ -589,6 +612,7 @@ def gipuma_filter_per(cfg):
                 collect_tanks(collect_args)
 
 def xy_filter(rank, cfg):
+    print("xyf")
     if cfg["fusion"]["xy_filter"].get("nprocs", None) is not None:
         scans = cfg["fusion"]["xy_filter"]["scans"][rank]
     else:
@@ -634,11 +658,13 @@ def xy_filter_per(rank, cfg):
             scans = f.readlines()
             scans = [line.rstrip() for line in scans]
 
-    data_folder = osp.join(cfg["output_dir"], "test_output")
+    #data_folder = osp.join(cfg["output_dir"], "test_output")
+    data_folder = cfg["output_dir"]
     output_dir = cfg["fusion"]["xy_filter_per"].get("output_dir", cfg["output_dir"])
     save_depths = cfg["data"]["test"]["save_depths"]
     for curr_tree_depth in save_depths:
-        depth_data_folder = osp.join(data_folder, "depth_{}".format(curr_tree_depth))
+        #depth_data_folder = osp.join(data_folder, "depth_{}".format(curr_tree_depth))
+        depth_data_folder = data_folder
         for para_id in range(cfg["fusion"]["xy_filter_per"]["para_num"]):
             if cfg["fusion"]["xy_filter_per"].get("para_tag", None) is not None:
                 para_tag = cfg["fusion"]["xy_filter_per"].get("para_tag")[para_id]
@@ -647,8 +673,8 @@ def xy_filter_per(rank, cfg):
             for scan in scans:
                 paras = cfg["fusion"]["xy_filter_per"][scan]
                 prob_threshold = paras["prob_threshold"][para_tag]
-                point_dir = os.path.join(output_dir, str(para_tag), "depth_{}".format(curr_tree_depth), "xy_filter_per", "collected_points_{}".format(prob_threshold)) \
-                    if prob_threshold is not None else os.path.join(output_dir, str(para_tag), "depth_{}".format(curr_tree_depth), "xy_filter_per", "collected_points")
+                point_dir = os.path.join(output_dir, str(para_tag), "xy_filter_per", "collected_points_{}".format(prob_threshold)) \
+                    if prob_threshold is not None else os.path.join(output_dir, str(para_tag), "xy_filter_per", "collected_points")
                 num_consistent = paras["num_consistent"][para_tag]
                 img_dist_thresh = paras["img_dist_thresh"][para_tag] if paras.get("img_dist_thresh", None) is not None else 1.0
                 depth_thresh = paras["depth_thresh"][para_tag] if paras.get("depth_thresh", None) is not None else 0.01
@@ -663,7 +689,7 @@ def xy_filter_per(rank, cfg):
                 data_name = cfg.get("data_name", "dtu")
                 if "dtu" in data_name:
                     scan_id = int(scan[4:])
-                    ply_name = osp.join(point_dir, "binary_{:03d}_l3.ply".format(scan_id))
+                    ply_name = osp.join(point_dir, "gbinet{:03d}_l3.ply".format(scan_id))
                 elif "tanks" in data_name:
                     ply_name = osp.join(point_dir, "{}.ply".format(scan))
                 filter_depth(scan_folder=scan_folder, pair_path=pair_path, plyfilename=ply_name,

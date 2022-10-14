@@ -193,8 +193,7 @@ class MVSDataset(Dataset):
 
         for i, vid in enumerate(view_ids):
             # NOTE that the id in image file names is from 1 to 49 (not 0~48)
-            img_filename = os.path.join(self.datapath,
-                                        'Rectified_raw/{}/rect_{:0>3}_{}_r5000.png'.format(scan, vid + 1, light_idx))
+            img_filename = os.path.join(self.datapath,'Images/{}/lighting{:08d}_{}.png'.format(scan, vid, light_idx))
             mask_filename = os.path.join(self.datapath, 'Depths_raw/{}/depth_visual_{:0>4}.png'.format(scan, vid))
             depth_filename = os.path.join(self.datapath, 'Depths_raw/{}/depth_map_{:0>4}.pfm'.format(scan, vid))
             proj_mat_filename = os.path.join(self.datapath, 'Cameras/{:0>8}_cam.txt').format(vid)
@@ -329,8 +328,7 @@ class MVSDataset(Dataset):
 
         for i, vid in enumerate(view_ids):
             # NOTE that the id in image file names is from 1 to 49 (not 0~48)
-            img_filename = os.path.join(self.datapath,
-                                        'Rectified_raw/{}/rect_{:0>3}_{}_r5000.png'.format(scan, vid + 1, light_idx))
+            img_filename = os.path.join(self.datapath,'Images/{}/lighting/{:08d}_{}.png'.format(scan, vid, light_idx))
             proj_mat_filename = os.path.join(self.datapath, 'Cameras/{:0>8}_cam.txt').format(vid)
 
             img = self.read_img(img_filename, color_mode=self.color_mode)

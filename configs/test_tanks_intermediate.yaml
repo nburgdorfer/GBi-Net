@@ -1,6 +1,6 @@
-output_dir: "exps/test_tanks_intermediate"
-true_gpu: "3"
-gpu: [0]
+output_dir: "/media/Data/nate/Results/GBi-Net/tnt/Output_intermediate/"
+true_gpu: "0,1"
+gpu: [0,1]
 random_seed: 0
 auto_resume: True
 master_port: "11323"
@@ -44,9 +44,9 @@ test:
   test_metric: "thres2mm_accu"
 
 data:
-  num_workers: 4
+  num_workers: 8
   test:
-    root_dir: "data/tankandtemples/intermediate"
+    root_dir: "/media/Data/nate/TNT/intermediate/"
     num_view: 7
     interval_scale: 1.0
     num_depth: 256
@@ -73,7 +73,7 @@ fusion:
     global_pair: False
     para_num: 1
     para_tag: [0]
-    output_dir: "exps/test_tanks_intermediate/xy_filter"
+    output_dir: "/media/Data/nate/Results/GBi-Net/tnt/Output_intermediate_fused/"
     Family:
       prob_threshold: [0.85]
       num_consistent: [5]

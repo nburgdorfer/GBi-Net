@@ -1,5 +1,6 @@
 import argparse
 import os
+import os.path as osp
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -137,22 +138,28 @@ def filter_depth(scan_folder, pair_path, plyfilename, prob_threshold=0.8, num_co
     # TODO: hardcode size
     # used_mask = [np.zeros([296, 400], dtype=np.bool) for _ in range(nviews)]
 
+    # create output paths
+    out_depth_path = osp.join(scan_folder, "depth_est")
+    out_conf_path = osp.join(scan_folder, "confidence")
+    out_img_path = osp.join(scan_folder, "img")
+    out_cam_path = osp.join(scan_folder, "cam")
+
     # for each reference view and the corresponding source views
     for ref_view, src_views in pair_data:
         # load the camera parameters
-        ref_name = "{:0>8}.jpg".format(ref_view)
+        ref_name = "{:08d}.png".format(ref_view)
         ref_prefix = os.path.splitext(ref_name)[0]
         ref_intrinsics, ref_extrinsics = read_camera_parameters(
-            os.path.join(scan_folder, "cam_" + "{:0>8}".format(ref_view)+'_init.txt'))
+            os.path.join(out_cam_path, "{:08d}".format(ref_view)+'.txt'))
         # load the reference image
-        ref_img = read_img(os.path.join(scan_folder, ref_name))
+        ref_img = read_img(os.path.join(out_img_path, ref_name))
         # load the estimated depth of the reference view
-        ref_depth_est = read_pfm(os.path.join(scan_folder, "{:0>8}_init.pfm".format(ref_view)))[0]
+        ref_depth_est = read_pfm(os.path.join(out_depth_path, "{:08d}.pfm".format(ref_view)))[0]
         # load the photometric mask of the reference view
         if prob_threshold == 0.0:
             photo_mask = (np.ones(ref_depth_est.shape, dtype=np.int64) == 1)
         else:
-            confidence = read_pfm(os.path.join(scan_folder, "{:0>8}_prob.pfm".format(ref_view)))[0]
+            confidence = read_pfm(os.path.join(out_conf_path, "{:08d}.pfm".format(ref_view)))[0]
             photo_mask = confidence > prob_threshold
             if photo_mask.shape[0] != ref_depth_est.shape[0] or photo_mask.shape[1] != ref_depth_est.shape[1]:
                 photo_mask_t = torch.tensor(photo_mask, dtype=torch.float32)
@@ -171,9 +178,9 @@ def filter_depth(scan_folder, pair_path, plyfilename, prob_threshold=0.8, num_co
         for src_view in src_views:
             # camera parameters of the source view
             src_intrinsics, src_extrinsics = read_camera_parameters(
-                os.path.join(scan_folder, "cam_" + "{:0>8}".format(src_view)+'_init.txt'))
+                os.path.join(out_cam_path, "{:08d}".format(src_view)+'.txt'))
             # the estimated depth of the source view
-            src_depth_est = read_pfm(os.path.join(scan_folder, "{:0>8}_init.pfm".format(src_view)))[0]
+            src_depth_est = read_pfm(os.path.join(out_depth_path, "{:08d}.pfm".format(src_view)))[0]
 
             geo_mask, depth_reprojected, x2d_src, y2d_src = check_geometric_consistency(ref_depth_est, ref_intrinsics, ref_extrinsics,
                                                                       src_depth_est,
@@ -210,7 +217,7 @@ def filter_depth(scan_folder, pair_path, plyfilename, prob_threshold=0.8, num_co
         xyz_world = np.matmul(np.linalg.inv(ref_extrinsics),
                               np.vstack((xyz_ref, np.ones_like(x))))[:3]
         vertexs.append(xyz_world.transpose((1, 0)))
-        vertex_colors.append((color * 255).astype(np.uint8))
+        vertex_colors.append((color[:,:3] * 255).astype(np.uint8))
 
     vertexs = np.concatenate(vertexs, axis=0)
     vertex_colors = np.concatenate(vertex_colors, axis=0)
