@@ -238,6 +238,10 @@ class MVSDataset(Dataset):
                 stage_cam = np.zeros([2, 4, 4], dtype=np.float32)
                 stage_cam[0, :4, :4] = extrinsics
                 stage_cam[1, :3, :3] = stage_intrinsics
+                stage_cam[1, 3, 0] = depth_min
+                stage_cam[1, 3, 1] = depth_interval
+                stage_cam[1, 3, 2] = 256
+                stage_cam[1, 3, 3] = (depth_interval*256) + depth_min
                 cams[str(stage_id)].append(stage_cam)
             
                 if i == 0:  # reference view
@@ -371,6 +375,10 @@ class MVSDataset(Dataset):
                 stage_cam = np.zeros([2, 4, 4], dtype=np.float32)
                 stage_cam[0, :4, :4] = extrinsics
                 stage_cam[1, :3, :3] = stage_intrinsics
+                stage_cam[1, 3, 0] = depth_min
+                stage_cam[1, 3, 1] = depth_interval
+                stage_cam[1, 3, 2] = 256
+                stage_cam[1, 3, 3] = (depth_interval*256) + depth_min
                 cams[str(stage_id)].append(stage_cam)
             
                 if i == 0:  # reference view
