@@ -1,6 +1,6 @@
 output_dir: "/media/nate/Drive1/Results/GBi-Net/dtu/Output/"
-true_gpu: "0,1"
-gpu: [0,1]
+true_gpu: "0"
+gpu: [0]
 random_seed: 0
 auto_resume: True
 master_port: "11320"
@@ -63,8 +63,8 @@ data:
     save_depths: [8]
     prob_depth: 6
 
-no_testing: True
-# no_fusion: True
+# no_testing: True
+no_fusion: True
 
 fusion:
   name: "xy_filter_per"

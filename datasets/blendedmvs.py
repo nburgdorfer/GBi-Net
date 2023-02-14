@@ -12,7 +12,7 @@ class MVSDataset(Dataset):
         ndepths=192, interval_scale=1.06, 
         img_mean=None, img_std=None, out_scale=1.0, self_norm=False, color_mode="RGB", 
         is_stage=False, stage_info=None, random_view=False,
-        random_crop=False, crop_h=576, crop_w=768, transform=True, depth_num=4, **kwargs):
+        random_crop=False, crop_h=1536, crop_w=2048, transform=True, depth_num=4, **kwargs):
         super(MVSDataset, self).__init__()
         self.datapath = datapath
         self.listfile = listfile
@@ -40,7 +40,7 @@ class MVSDataset(Dataset):
         self.crop_h = crop_h
         self.crop_w = crop_w
 
-        assert self.mode in ["train", "val"]
+        #assert self.mode in ["train", "val"]
         self.metas = self.build_list()
 
     def build_list(self):
@@ -204,9 +204,9 @@ class MVSDataset(Dataset):
         scan_path = os.path.join(self.datapath, scan)
         for i, vid in enumerate(view_ids):
             img_filename = os.path.join(scan_path,
-                                        'blended_images/{:0>8}.jpg'.format(vid))
-            depth_filename = os.path.join(scan_path, 'rendered_depth_maps/{:0>8}.pfm'.format(vid))
-            proj_mat_filename = os.path.join(scan_path, 'cams/{:0>8}_cam.txt').format(vid)
+                                        'images/{:08d}.png'.format(vid))
+            depth_filename = os.path.join(scan_path, 'gt_depth/{:08d}.pfm'.format(vid))
+            proj_mat_filename = os.path.join(scan_path, 'cams/{:08d}_cam.txt').format(vid)
 
             img = self.read_img(img_filename, color_mode=self.color_mode)
             
@@ -223,6 +223,10 @@ class MVSDataset(Dataset):
                 stage_cam = np.zeros([2, 4, 4], dtype=np.float32)
                 stage_cam[0, :4, :4] = extrinsics
                 stage_cam[1, :3, :3] = stage_intrinsics
+                stage_cam[1, 3, 0] = depth_min
+                stage_cam[1, 3, 1] = depth_interval
+                stage_cam[1, 3, 2] = 256
+                stage_cam[1, 3, 3] = (depth_interval*256) + depth_min
                 cams[str(stage_id)].append(stage_cam)
             
                 if i == 0:  # reference view
