@@ -58,10 +58,7 @@ class MVSDataset(Dataset):
                 for view_idx in range(num_viewpoint):
                     ref_view = int(f.readline().rstrip())
                     src_views = [int(x) for x in f.readline().rstrip().split()[1::2]]
-                    # light conditions 0-6
-                    for light_idx in range(7):
-                        metas.append((scan, light_idx, ref_view, src_views))
-        print("dataset", self.mode, "metas:", len(metas))
+                    metas.append((scan, ref_view, src_views))
         return metas
 
     def __len__(self):
@@ -180,7 +177,7 @@ class MVSDataset(Dataset):
     
     def getitem_stages(self, idx):
         meta = self.metas[idx]
-        scan, light_idx, ref_view, src_views = meta
+        scan, ref_view, src_views = meta
         # use only the reference view and first nviews-1 source views
         if not self.random_view:
             view_ids = [ref_view] + src_views[:self.nviews - 1]
@@ -200,7 +197,6 @@ class MVSDataset(Dataset):
         masks = {str(i):None for i in range(stage_num)}
 
         for i, vid in enumerate(view_ids):
-            # NOTE that the id in image file names is from 1 to 49 (not 0~48)
             img_filename = os.path.join(self.datapath,'Images/{}/{:08d}.png'.format(scan, vid))
             mask_filename = os.path.join(self.datapath, 'GT_Depths/{}/disp/{:08d}_depth_disp.png'.format(scan, vid))
             depth_filename = os.path.join(self.datapath, 'GT_Depths/{}/{:08d}_depth.pfm'.format(scan, vid))
@@ -292,7 +288,7 @@ class MVSDataset(Dataset):
 
     def getitem_stages_random_crop(self, idx):
         meta = self.metas[idx]
-        scan, light_idx, ref_view, src_views = meta
+        scan, ref_view, src_views = meta
         # use only the reference view and first nviews-1 source views
         if not self.random_view:
             view_ids = [ref_view] + src_views[:self.nviews - 1]
@@ -313,7 +309,6 @@ class MVSDataset(Dataset):
         rand_start_h = None
         rand_start_w = None
         for i, vid in enumerate(view_ids):
-            # NOTE that the id in image file names is from 1 to 49 (not 0~48)
             img_filename = os.path.join(self.datapath,'Images/{}/{:08d}.png'.format(scan, vid))
             mask_filename = os.path.join(self.datapath, 'GT_Depths/{}/disp/{:08d}_depth_disp.png'.format(scan, vid))
             depth_filename = os.path.join(self.datapath, 'GT_Depths/{}/{:08d}_depth.pfm'.format(scan, vid))
@@ -432,112 +427,7 @@ class MVSDataset(Dataset):
 
 
     def __getitem__(self, idx):
-        if self.is_stage:
-            if self.random_crop:
-                return self.getitem_stages_random_crop(idx)
-            else:
-                return self.getitem_stages(idx)
-        meta = self.metas[idx]
-        scan, light_idx, ref_view, src_views = meta
-        # use only the reference view and first nviews-1 source views
-        if not self.random_view:
-            view_ids = [ref_view] + src_views[:self.nviews - 1]
+        if self.random_crop:
+            return self.getitem_stages_random_crop(idx)
         else:
-            num_src_views = len(src_views)
-            rand_ids = torch.randperm(num_src_views)[:self.nviews - 1]
-            src_views_t = torch.tensor(src_views)
-            view_ids = [ref_view] + list(src_views_t[rand_ids].numpy())
-
-        imgs = []
-        mask = None
-        depth = None
-        depth_values = None
-        proj_matrices = []
-        cams = []
-
-        for i, vid in enumerate(view_ids):
-            # NOTE that the id in image file names is from 1 to 49 (not 0~48)
-            img_filename = os.path.join(self.datapath,'Images/{}/{:08d}.png'.format(scan, vid))
-            mask_filename = os.path.join(self.datapath, 'GT_Depths/{}/disp/{:08d}_depth_disp.png'.format(scan, vid))
-            depth_filename = os.path.join(self.datapath, 'GT_Depths/{}/{:08d}_depth.pfm'.format(scan, vid))
-            proj_mat_filename = os.path.join(self.datapath, 'Cameras/{:08d}_cam.txt').format(vid)
-
-            img = self.read_img(img_filename, color_mode=self.color_mode)
-            ori_shape = img.shape
-            img = self.scale_img(img=img, scale=0.5, interpolation=self.img_interp) # 600, 800
-            img = self.crop_img(img=img, new_h=512, new_w=640) # 512, 640
-                            
-            intrinsics, extrinsics, depth_min, depth_interval = self.read_cam_file(proj_mat_filename)
-            intrinsics = self.scale_cam(intrinsics=intrinsics, scale=0.5) # 600, 800
-            intrinsics = self.crop_cam(intrinsics=intrinsics, h=ori_shape[0] / 2.0, w=ori_shape[1] / 2.0, new_h=512, new_w=640)
-            if self.out_scale != 1.0:
-                intrinsics = self.scale_cam(intrinsics=intrinsics, scale=self.out_scale)
-            
-            if i == 0:  # reference view
-                ref_img = img.copy()
-                if self.out_scale != 1.0:
-                    ref_img = self.scale_img(ref_img, scale=self.out_scale, interpolation=self.img_interp)
-                ref_img = np.array(ref_img, dtype=np.uint8)
-                ref_cam = np.zeros(shape=(2, 4, 4), dtype=np.float32)
-                ref_cam[0, :4, :4] = extrinsics
-                ref_cam[1, :3, :3] = intrinsics
-            
-            img = self.norm_img(img, self_norm=self.self_norm, img_mean=self.img_mean, img_std=self.img_std)
-            imgs.append(img)
-
-            # multiply intrinsics and extrinsics to get projection matrix
-            proj_mat = extrinsics.copy()
-            proj_mat[:3, :4] = np.matmul(intrinsics, proj_mat[:3, :4])
-            proj_matrices.append(proj_mat)
-
-            cam = np.zeros([2, 4, 4], dtype=np.float32)
-            cam[0, :4, :4] = extrinsics
-            cam[1, :3, :3] = intrinsics
-            cams.append(cam)
-
-            if i == 0:  # reference view
-                depth_values = np.arange(depth_min, depth_interval * self.ndepths + depth_min, depth_interval,
-                                         dtype=np.float32)
-                mask = self.read_img(mask_filename)
-                mask = self.norm_img(mask)
-                mask = self.scale_img(img=mask, scale=0.5, interpolation=cv2.INTER_NEAREST) # 600, 800
-                mask = self.crop_img(img=mask, new_h=512, new_w=640) # 512, 640
-                if self.out_scale != 1.0:
-                    mask = self.scale_img(img=mask, scale=self.out_scale, interpolation=cv2.INTER_NEAREST)
-                mask[mask > 0.0] = 1.0
-                depth = self.read_depth(depth_filename)
-                depth = self.scale_img(img=depth, scale=0.5, interpolation=cv2.INTER_NEAREST) # 600, 800
-                depth = self.crop_img(img=depth, new_h=512, new_w=640) # 512, 640
-                if self.out_scale != 1.0:
-                    depth = self.scale_img(img=depth, scale=self.out_scale, interpolation=cv2.INTER_NEAREST)
-                depth_min_max = np.array([depth_values[0], depth_values[-1]], dtype=np.float32)
-
-                depth_range = depth_min_max[1] - depth_min_max[0]
-                binary_tree =  np.zeros([2, depth.shape[0], depth.shape[1]], dtype=np.int64)
-                binary_tree[0, :, :] = binary_tree[0, :, :] + 1
-                # binary_tree[0] is level, binary_tree[1] is key
-                
-                depth_min = depth_min_max[0]
-                sample_interval = depth_range / 4.0
-                sample_depth = []
-                for i in range(4):
-                    sample_depth.append(np.ones_like(depth) * (sample_interval * (i + i + 1) / 2.0 + depth_min))
-                    
-                sample_depth = np.stack(sample_depth, axis=0)
-                
-        imgs = np.stack(imgs).transpose([0, 3, 1, 2])
-        proj_matrices = np.stack(proj_matrices)
-        cams = np.stack(cams, axis=0)
-
-        return {"scan_name": scan,
-                "img_id": ref_view,
-                "ref_img": ref_img,
-                "ref_cam": ref_cam,
-                "imgs": imgs,
-                "proj_matrices": proj_matrices,
-                "cams": cams,
-                "depth": depth,
-                "depth_values": depth_values,
-                "depth_min_max": depth_min_max,
-                "binary_tree": {"tree": binary_tree, "depth": sample_depth},
-                "mask": mask}
+            return self.getitem_stages(idx)

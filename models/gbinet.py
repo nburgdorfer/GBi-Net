@@ -15,20 +15,19 @@ class GBiNet(nn.Module):
         self.output_channels = cfg["model"]["output_channels"]
         self.depth2stage = cfg["model"]["stage_info"]["depth2stage"]
         self.group_nums = cfg["model"]["group_nums"]
+
+        # feature encoder
         self.feat_name = cfg["model"].get("feat_name", "StageFeatExtNet")
         self.feat_class = getattr(modules.gbinet_submodules, self.feat_name)
         self.img_feature = self.feat_class(base_channels=8, stage_num=self.stage_num, output_channels=self.output_channels)
         self.feature_fetcher = FeatureFetcher()
         
-        if cfg["model"].get("use_3dbn", True):
-            self.cost_network = nn.ModuleDict({
-                str(i):CostRegNetBN(self.group_nums[i], 8) for i in range(self.stage_num)
-            })
-        else:
-            self.cost_network = nn.ModuleDict({
-                str(i):CostRegNet(self.group_nums[i], 8) for i in range(self.stage_num)
-            })
+        # cost regularizer
+        self.cost_network = nn.ModuleDict({
+            str(i):CostRegNetBN(self.group_nums[i], 8) for i in range(self.stage_num)
+        })
         
+        # view weight network
         self.view_weight_nets = nn.ModuleDict({
                 str(i):PixelwiseNet(self.group_nums[i]) for i in range(self.stage_num)
             })
@@ -39,9 +38,6 @@ class GBiNet(nn.Module):
         B, C, H, W = ref_feature.shape
         depth_num = current_depths.shape[1]
 
-        # ref_volume = ref_feature.unsqueeze(2).repeat(1, 1, depth_num, 1, 1)
-        # volume_sum = ref_volume
-        # volume_sq_sum = ref_volume ** 2
         group_num = self.group_nums[stage_id]
         ref_feature = ref_feature.view(B, group_num, C//group_num, H, W)
 
