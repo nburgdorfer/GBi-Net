@@ -1,5 +1,5 @@
-output_dir: "/media/nate/Drive1/Results/GBi-Net/dtu/Output/"
-true_gpu: "0"
+output_dir: "/mnt/Drive1/Results/GBi-Net_orig/DTU/Output/"
+true_gpu: "1"
 gpu: [0]
 random_seed: 0
 auto_resume: True
@@ -45,7 +45,7 @@ test:
 data:
   num_workers: 4
   test:
-    root_dir: "/media/nate/Data/DTU/"
+    root_dir: "/home/nate/data/DTU/"
     num_view: 5
     interval_scale: 0.8
     num_depth: 256
