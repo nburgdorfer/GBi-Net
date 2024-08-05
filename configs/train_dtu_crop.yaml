@@ -1,6 +1,6 @@
 output_dir: "exps/train_dtu_crop"
-true_gpu: "4, 5"
-gpu: [0, 1]
+true_gpu: "1"
+gpu: [0]
 random_seed: 0
 auto_resume: True
 master_port: "11325"
@@ -63,7 +63,7 @@ data:
   num_workers: 4
   out_scale: 1.0
   train:
-    root_dir: "data/dtu"
+    root_dir: "/home/nate/data/DTU"
     num_view: 5
     interval_scale: 0.8
     num_depth: 256
@@ -73,7 +73,7 @@ data:
     random_crop: True
     listfile:  "lists/dtu/train.txt"
   val:
-    root_dir: "data/dtu"
+    root_dir: "/home/nate/data/DTU"
     num_view: 5
     interval_scale: 0.8
     num_depth: 256
