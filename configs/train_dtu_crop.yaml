@@ -70,7 +70,7 @@ data:
     self_norm: False
     color_mode: null
     random_view: True
-    random_crop: True
+    random_crop: False
     listfile:  "lists/dtu/train.txt"
   val:
     root_dir: "/home/nate/data/DTU"
